@@ -25,4 +25,26 @@ router.get("/", async (req, res) => {
   }
 });
 
+// get product by id
+router.get("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [results] = await connection.execute(
+      'SELECT * from articles where id_articles = ?', [id]
+    );
+    if (results.length) {
+      res.send(results[0]);
+    } else {
+      res.status(404).send({
+        error: {
+          message: "Product not found"
+        }
+      });
+    }
+
+  } catch (e) {
+    res.status(500).send({ error: e });
+  }
+});
+
 export default router;
