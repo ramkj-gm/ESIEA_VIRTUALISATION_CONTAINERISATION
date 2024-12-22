@@ -1,5 +1,5 @@
 import express from "express";
-import { connection } from "./db.js";
+import { connection, initDBConnection } from "./db.js";
 
 const router = express.Router({});
 
@@ -11,18 +11,31 @@ router.use((_req, res, next) => {
 
 // health: return a 2xx response when your server is healthy, else send a 5xx response
 router.get("/", async (_req, res, _next) => {
+  const healthcheck = {
+    uptime: process.uptime(),
+    message: "OK",
+    timestamp: Date.now(),
+  };
+  let status = 200;
+  if (!connection) {
+    try {
+      await initDBConnection();
+    } catch (e) {
+      healthcheck.dbConnection = "KO";
+      healthcheck.dbConnectionErr = e;
+      status = 503;
+    }
+  }
   try {
     await connection.ping();
-    const healthcheck = {
-      uptime: process.uptime(),
-      message: "OK",
-      dbConnection: "OK",
-      timestamp: Date.now(),
-    };
-    res.send(healthcheck);
+    healthcheck.dbConnection = "OK";
   } catch (e) {
-    res.status(503).send({ error: e });
+    healthcheck.dbConnection = "KO";
+    healthcheck.dbConnectionErr = e;
+    status = 503;
+    connection = undefined;
   }
+  res.status(status).send(healthcheck);
 });
 
 export default router;
