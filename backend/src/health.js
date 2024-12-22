@@ -1,4 +1,5 @@
 import express from "express";
+import { connection } from "./db.js";
 
 const router = express.Router({});
 
@@ -11,10 +12,12 @@ router.use((_req, res, next) => {
 // health: return a 2xx response when your server is healthy, else send a 5xx response
 router.get("/", async (_req, res, _next) => {
   try {
+    await connection.ping();
     const healthcheck = {
       uptime: process.uptime(),
       message: "OK",
-      timestamp: Date.now()/1000,
+      dbConnection: "OK",
+      timestamp: Date.now(),
     };
     res.send(healthcheck);
   } catch (e) {
