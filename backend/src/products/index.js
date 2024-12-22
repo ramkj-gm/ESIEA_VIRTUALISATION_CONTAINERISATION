@@ -9,7 +9,7 @@ router.get("/", async (req, res) => {
     const { deleted } = req.query;
     let condition = "";
     let dbParams = [];
-    if(deleted != undefined){
+    if (deleted != undefined) {
       condition = "where deleted = ?";
       dbParams.push(deleted);
     }
@@ -21,6 +21,7 @@ router.get("/", async (req, res) => {
       data: results
     });
   } catch (e) {
+    console.log(e);
     res.status(500).send({ error: e });
   }
 });
@@ -43,20 +44,18 @@ router.get("/:id", async (req, res) => {
     }
 
   } catch (e) {
+    console.log(e);
     res.status(500).send({ error: e });
   }
 });
 
 // create new product
-router.post("/", async (_req, res, _next) => {
+router.post("/", async (_req, res) => {
   try {
-    const body = req.body;
-    if (!body.nom_articles || !body.description_articles || !body.prix_articles || !body.disponible_articles || !body.nombre_articles || !body.nombre_dispsonible_articles || !body.image_articles || !body.deleted) {
-      res.status(400).send("Bad Request");
-      return
-    }
-    const [results, fields] = await connection.query(
-      "INSERT INTO products `name`, `description`, `price`, `has_available_quantity`, `quantity`, `available_quanity`, `image_path`)  VALUES (?,?,?,?,?,?,?,?)", body.id_articles, body.nom_articles, body.description_articles, body.prix_articles, body.disponible_articles, body.nombre_articles, body.nombre_disponible_articles, body.image_articles
+    const { name, description, price, has_available_quantity, quantity, available_quantity } = req.body;
+    const [results, fields] = await connection.execute(
+      "INSERT INTO products `name`, `description`, `price`, `has_available_quantity`, `quantity`, `available_quanity`)  VALUES (?,?,?,?,?,?,?)",
+      [name, description, price, has_available_quantity, quantity, available_quantity]
     );
 
     res.status(201).send({
@@ -65,33 +64,52 @@ router.post("/", async (_req, res, _next) => {
     })
 
   } catch (e) {
-    res.status(503).send({ error: e });
+    console.log(e);
+    res.status(500).send({ error: e });
   }
 });
 
 // update product by id
-router.post("/:id", async (_req, res, _next) => {
+router.put("/:id", async (req, res) => {
   try {
-    const id = req.params;
-    const [results, fields] = await connection.query(
-      'UPDATE articles SET nom_articles = ?, description_articles = ?, prix_articles = ?, disponible_articles = ?, nombre_articles = ?, nombre_disponible_articles = ?, image_articles = ? where id_articles = ?', body.id_articles, body.nom_articles, body.description_articles, body.prix_articles, body.disponible_articles, body.nombre_articles, body.nombre_disponible_articles, body.image_articles, body.id_articles
-    );
+    const { id } = req.params;
+    const { name, description, price, has_available_quantity, quantity, available_quantity } = req.body;
+    console.log(req.body);
+    const [results] = await connection.query(
+      'UPDATE `products` SET `name` = ?, `description` = ?, `price` = ?, `has_available_quantity` = ?, `quantity` = ?, `available_quantity` = ? where id = ? LIMIT 1',
+      [name, description, price, has_available_quantity, quantity, available_quantity, id]);
     res.send(results);
   } catch (e) {
-    res.status(503).send({ error: e });
+    console.log(e);
+    res.status(500).send({ error: e });
   }
 });
 
 // delete product
-router.delete("/:id", async (_req, res, _next) => {
+router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const [results, fields] = await connection.query(
-      'UPDATE articles SET deleted = ? where id_articles = ?', body.deleted, body.id_articles, body.nom_articles, body.description_articles, body.prix_articles, body.disponible_articles, body.nombre_articles, body.nombre_disponible_articles, body.image_articles, body.id_articles
+    const [results] = await connection.execute(
+      'UPDATE products SET deleted = ? where id = ?', [1, id]
     );
     res.send(results);
   } catch (e) {
-    res.status(503).send({ error: e });
+    console.log(e);
+    res.status(500).send({ error: e });
+  }
+});
+
+// recover product
+router.put("/:id/recover", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [results] = await connection.execute(
+      'UPDATE products SET deleted = ? where id = ?', [0, id]
+    );
+    res.send(results);
+  } catch (e) {
+    console.log(e);
+    res.status(500).send({ error: e });
   }
 });
 

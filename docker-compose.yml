@@ -31,8 +31,6 @@ services:
 
   node:
     container_name: node
-    ports: 
-      - "3000:3000"
     build:
       context: ./backend
     volumes:
